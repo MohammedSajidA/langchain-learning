@@ -1,0 +1,11 @@
+from langchain_core.messages import ToolMessage
+
+message = ToolMessage(
+    content="56",
+    tool_call_id="calculator_123"
+)
+
+print(message)
+print(message.content)
+print("--------------------------------------TOOL MESSAGE ID--------------------------------")
+print(message.tool_call_id)
