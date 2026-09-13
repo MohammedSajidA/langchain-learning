@@ -1,0 +1,140 @@
+from dotenv import load_dotenv
+
+from langchain_groq import ChatGroq
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnableBranch
+from langchain_core.output_parsers import StrOutputParser
+
+
+# Load GROQ_API_KEY
+load_dotenv()
+
+
+# Create the model
+llm = ChatGroq(
+    model="openai/gpt-oss-120b",
+    temperature=0
+)
+
+
+# -----------------------------
+# MATH CHAIN
+# -----------------------------
+
+math_prompt = ChatPromptTemplate.from_template(
+    """
+You are a math tutor.
+
+Solve this question step-by-step:
+
+{question}
+"""
+)
+
+math_chain = math_prompt | llm | StrOutputParser()
+
+
+# -----------------------------
+# PROGRAMMING CHAIN
+# -----------------------------
+
+programming_prompt = ChatPromptTemplate.from_template(
+    """
+You are a programming tutor.
+
+Explain the following programming question
+clearly to a beginner:
+
+{question}
+"""
+)
+
+programming_chain = programming_prompt | llm | StrOutputParser()
+
+
+# -----------------------------
+# GENERAL CHAIN
+# -----------------------------
+
+general_prompt = ChatPromptTemplate.from_template(
+    """
+You are a helpful assistant.
+
+Answer this question clearly:
+
+{question}
+"""
+)
+
+general_chain = general_prompt | llm | StrOutputParser()
+
+
+# -----------------------------
+# RUNNABLE BRANCH
+# -----------------------------
+
+branch = RunnableBranch(
+
+    # Condition 1 → Math
+    (
+        lambda x: any(
+            symbol in x["question"].lower()
+            for symbol in ["+", "-", "*", "/", "calculate"]
+        ),
+        math_chain
+    ),
+
+    # Condition 2 → Programming
+    (
+        lambda x: any(
+            word in x["question"].lower()
+            for word in [
+                "python",
+                "java",
+                "programming",
+                "code",
+                "function"
+            ]
+        ),
+        programming_chain
+    ),
+
+    # Default → General
+    general_chain
+)
+
+
+# -----------------------------
+# TEST 1
+# -----------------------------
+
+result1 = branch.invoke({
+    "question": "What is 25 * 4?"
+})
+
+print("\n===== QUESTION 1 =====")
+print(result1)
+
+
+# -----------------------------
+# TEST 2
+# -----------------------------
+
+result2 = branch.invoke({
+    "question": "What is a Python function?"
+})
+
+print("\n===== QUESTION 2 =====")
+print(result2)
+
+
+# -----------------------------
+# TEST 3
+# -----------------------------
+
+result3 = branch.invoke({
+    "question": "What is artificial intelligence?"
+})
+
+print("\n===== QUESTION 3 =====")
+print(result3)
